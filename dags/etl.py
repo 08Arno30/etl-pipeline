@@ -9,7 +9,7 @@ import json
 with DAG(
     dag_id="nasa_apod_postgres",
     start_date=days_ago(1),
-    schdedule_interval="@daily",
+    schedule_interval="@daily",
     catchup=False
 ) as dag:
     # Step 1: Create the table if it doesn't exist
@@ -71,7 +71,16 @@ with DAG(
         # execute the SQL query
         postgres_hook.run(insert_data_query, parameters=nasa_apod_data)
     
-    # Step 5: Verify the data using DBViewer
+    # Step 5: Verify the data using DBeaver
 
 
     # Step 6: Define the task dependencies
+    # Extract
+    create_table() >> extract_nasa_apod_data # ensure table is created before extracting data
+    api_response = extract_nasa_apod_data.output
+
+    # Transform
+    transformed_data = transform_nasa_apod_data(api_response)
+
+    # Load
+    load_nasa_apod_data(transformed_data)
