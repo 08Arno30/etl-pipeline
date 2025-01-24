@@ -44,12 +44,32 @@ with DAG(
         response_filter=lambda response: response.json(), # convert response to json
     )
 
-
     # Step 3: Transform the data (i.e. Pick the information that needs to be saved)
-
+    @task
+    def transform_nasa_apod_data(response):
+        nasa_apod_data = {
+            'title': response.get('title', ''),
+            'explanation': response.get('explanation', ''),
+            'url': response.get('url', ''),
+            'date': response.get('date', ''),
+            'media_type': response.get('media_type', ''),
+        }
+        return nasa_apod_data
 
     # Step 4: Load the transformed data into the Postgres database
+    @task
+    def load_nasa_apod_data(nasa_apod_data):
+        # initialize the PostgresHook
+        postgres_hook = PostgresHook(postgres_conn_id="my_postgres_connection")
 
+        # SQL query to insert data into the table
+        insert_data_query = """
+            INSERT INTO nasa_apod_data (title, explanation, url, date, media_type)
+            VALUES (%(title)s, %(explanation)s, %(url)s, %(date)s, %(media_type)s);
+        """
+
+        # execute the SQL query
+        postgres_hook.run(insert_data_query, parameters=nasa_apod_data)
     
     # Step 5: Verify the data using DBViewer
 
